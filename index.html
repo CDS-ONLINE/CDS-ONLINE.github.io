@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Scienza delle Costruzioni - Trave adimensionale</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+    h1, h2 {
+      text-align: center;
+    }
+
+    /* Griglia principale: colonne laterali + contenuto centrale */
+    .page-grid {
+      display: grid;
+      grid-template-columns: 140px minmax(0, 1fr) 140px;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .side-ad {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.3fr 1.7fr;
+      gap: 16px;
+    }
+
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    select, input[type="text"], input[type="number"] {
+      width: 100%;
+      padding: 6px;
+      margin-top: 4px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    button {
+      margin-top: 12px;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .results p {
+      margin: 4px 0;
+      font-size: 14px;
+    }
+    canvas {
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-top: 8px;
+      width: 100%;
+      height: 220px;
+    }
+    #canvasFBD {
+      height: 200px;
+    }
+    .small {
+      font-size: 12px;
+      color: #555;
+    }
+    .ad-container {
+      border: 1px dashed #aaa;
+      border-radius: 8px;
+      padding: 8px;
+      text-align: center;
+      font-size: 12px;
+    }
+
+    @media (max-width: 1000px) {
+      .page-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .side-ad {
+        display: none; /* nasconde le colonne laterali su schermi piccoli */
+      }
+    }
+
+    @media (max-width: 800px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>App Scienza delle Costruzioni</h1>
+  <h2>Trave adimensionale - Vincoli, carichi, reazioni e diagrammi</h2>
+
+  <!-- GRIGLIA A 3 COLONNE: SX ADV / CENTRO APP / DX ADV -->
+  <div class="page-grid">
+    <!-- Colonna pubblicità sinistra -->
+    <div class="side-ad">
+      <div class="ad-container">
+        Spazio pubblicità sinistra
+        <br /><span class="small">(banner verticale)</span>
+      </div>
+    </div>
+
+    <!-- CONTENUTO CENTRALE (APP) -->
+    <div>
+      <div class="layout">
+        <!-- PANNELLO INPUT -->
+        <div class="card">
+          <h3>1. Vincoli alle estremità</h3>
+
+          <label>
+            Vincolo all'estremità sinistra:
+            <select id="leftSupport">
+              <option value="cerniera">Cerniera (Rx, Ry)</option>
+              <option value="incastro">Incastro (Rx, Ry, M)</option>
+              <option value="carrello">Carrello (Ry)</option>
+              <option value="doppio_pendolo">Doppio pendolo (Ry, M)</option>
+              <option value="doppio_doppio_pendolo">Doppio doppio pendolo (M)</option>
+            </select>
+          </label>
+
+          <label>
+            Vincolo all'estremità destra:
+            <select id="rightSupport">
+              <option value="cerniera">Cerniera (Rx, Ry)</option>
+              <option value="incastro">Incastro (Rx, Ry, M)</option>
+              <option value="carrello">Carrello (Ry)</option>
+              <option value="doppio_pendolo">Doppio pendolo (Ry, M)</option>
+              <option value="doppio_doppio_pendolo">Doppio doppio pendolo (M)</option>
+            </select>
+          </label>
+
+          <h3>2. Carico trasversale e lunghezza (adimensionali)</h3>
+
+          <label>
+            Tipo di carico:
+            <select id="loadType">
+              <option value="point">Carico concentrato</option>
+              <option value="udl">Carico distribuito uniforme</option>
+            </select>
+          </label>
+
+          <label>
+            Valore adimensionale del carico (simbolo):
+            <input type="text" id="loadSymbol" value="q" />
+            <span class="small">
+              Esempi: <code>q</code>, <code>2q</code>, <code>3q</code>, <code>P</code>, <code>2P</code>...
+            </span>
+          </label>
+
+          <label>
+            Lunghezza adimensionale della trave (simbolo):
+            <input type="text" id="lengthSymbol" value="L" />
+            <span class="small">
+              Esempi: <code>L</code>, <code>2L</code>, <code>3L</code>...
+            </span>
+          </label>
+
+          <div id="pointLoadInputs">
+            <label>
+              Posizione adimensionale del carico concentrato (0 &le; a &le; L):
+              <input type="number" id="a" value="0.5" step="0.1" />
+            </label>
+            <span class="small">
+              Per ora questa posizione viene usata solo se lo schema è semplicemente appoggiato.
+            </span>
+          </div>
+
+          <h3>3. Sforzo assiale (opzionale)</h3>
+          <label>
+            <input type="checkbox" id="enableAxial" />
+            Applica sforzo assiale costante lungo la trave
+          </label>
+          <div id="axialInputs">
+            <label>
+              Valore adimensionale (simbolo):
+              <input type="text" id="axialSymbol" value="N" />
+              <span class="small">
+                Esempi: <code>N</code>, <code>2N</code>, <code>-N</code>...
+              </span>
+            </label>
+            <label>
+              Verso (convenzione interna):
+              <select id="axialDirection">
+                <option value="tensione">Trazione (N &gt; 0)</option>
+                <option value="compressione">Compressione (N &lt; 0)</option>
+              </select>
+            </label>
+          </div>
+
+          <button onclick="calcolaEDisegna()">Calcola reazioni e diagrammi</button>
+
+          <div class="results" id="results"></div>
+
+          <!-- SPAZIO PUBBLICITÀ CENTRALE (3° slot) -->
+          <div class="ad-container" style="margin-top: 12px;">
+            Spazio pubblicità centrale
+            <br /><span class="small">(banner orizzontale)</span>
+          </div>
+        </div>
+
+        <!-- PANNELLI: FBD + DIAGRAMMI -->
+        <div>
+          <div class="card">
+            <h3>2. Schema di corpo libero</h3>
+            <p class="small">
+              Trave con i vincoli selezionati, carico applicato e vettori di reazione (in forma simbolica).<br/>
+              Convenzione momento: <strong>M positivo antiorario</strong>.
+            </p>
+            <canvas id="canvasFBD"></canvas>
+          </div>
+
+          <div class="card" id="diagramsCard">
+            <h3>3. Diagrammi delle sollecitazioni</h3>
+            <p class="small">
+              T(x): convenzione classica (positivo sopra, negativo sotto).<br/>
+              M(x): <strong>momento positivo disegnato sotto</strong>, negativo sopra.<br/>
+              N(x): positivo = trazione (diagramma sopra l'asse).
+            </p>
+
+            <p><strong>Taglio T(x)</strong></p>
+            <canvas id="canvasV"></canvas>
+
+            <p><strong>Momento flettente M(x)</strong></p>
+            <canvas id="canvasM"></canvas>
+
+            <p><strong>Sforzo assiale N(x)</strong></p>
+            <canvas id="canvasN"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Colonna pubblicità destra -->
+    <div class="side-ad">
+      <div class="ad-container">
+        Spazio pubblicità destra
+        <br /><span class="small">(banner verticale)</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const leftSupportSelect  = document.getElementById('leftSupport');
+    const rightSupportSelect = document.getElementById('rightSupport');
+    const loadTypeSelect     = document.getElementById('loadType');
+    const loadSymbolInput    = document.getElementById('loadSymbol');
+    const lengthSymbolInput  = document.getElementById('lengthSymbol');
+    const aInput             = document.getElementById('a');
+    const pointLoadInputs    = document.getElementById('pointLoadInputs');
+    const enableAxialCheck   = document.getElementById('enableAxial');
+    const axialInputsDiv     = document.getElementById('axialInputs');
+    const axialSymbolInput   = document.getElementById('axialSymbol');
+    const axialDirectionSel  = document.getElementById('axialDirection');
+    const resultsDiv         = document.getElementById('results');
+
+    loadTypeSelect.addEventListener('change', () => {
+      pointLoadInputs.style.display = loadTypeSelect.value === 'point' ? 'block' : 'none';
+    });
+
+    enableAxialCheck.addEventListener('change', () => {
+      axialInputsDiv.style.display = enableAxialCheck.checked ? 'block' : 'none';
+    });
+
+    // --- parsing simboli ---
+    function parseLoadSymbol(sym) {
+      let raw = sym && sym.trim() ? sym.trim() : 'q';
+      const match = raw.match(/^(\d+(?:\.\d+)?)\s*\*?\s*([A-Za-z]+)$/);
+      if (match) {
+        return { factor: parseFloat(match[1]), symbol: match[2], raw };
+      }
+      const match2 = raw.match(/^([A-Za-z]+)$/);
+      if (match2) {
+        return { factor: 1, symbol: match2[1], raw };
+      }
+      return { factor: 1, symbol: raw, raw };
+    }
+
+    function parseLengthSymbol(sym) {
+      if (!sym) return { Lnum: 1, symbol: 'L' };
+      sym = sym.trim();
+      const match = sym.match(/^(\d+(?:\.\d+)?)\s*\*?\s*L$/i);
+      if (match) return { Lnum: parseFloat(match[1]), symbol: sym };
+      const match2 = sym.match(/^L$/i);
+      if (match2) return { Lnum: 1, symbol: sym };
+      return { Lnum: 1, symbol: sym };
+    }
+
+    // approssima un float con una frazione con denominatore maxDen
+    function floatToFraction(x, maxDen = 20) {
+      if (Math.abs(x) < 1e-9) return { num: 0, den: 1 };
+      const sign = x < 0 ? -1 : 1;
+      const ax = Math.abs(x);
+      let bestNum = 1, bestDen = 1, minErr = Infinity;
+      for (let den = 1; den <= maxDen; den++) {
+        const num = Math.round(ax * den);
+        const err = Math.abs(ax - num / den);
+        if (err < minErr - 1e-9) {
+          minErr = err;
+          bestNum = num;
+          bestDen = den;
+        }
+      }
+      return { num: sign * bestNum, den: bestDen };
+    }
+
+    function formatCoeffWithSymbols(frac, symbolLoadText, symbolL, powL = 0) {
+      if (Math.abs(frac.num) === 0) return '0';
+      const sign = frac.num < 0 ? '-' : '';
+      const n = Math.abs(frac.num);
+      const d = frac.den;
+      let coeffStr = '';
+      if (d === 1 && n === 1) {
+        coeffStr = sign; // solo segno
+      } else if (d === 1) {
+        coeffStr = sign + n.toString();
+      } else {
+        coeffStr = sign + n + '/' + d;
+      }
+
+      let result = '';
+      if (coeffStr === '' || coeffStr === '-') {
+        result = coeffStr + symbolLoadText;
+      } else {
+        result = coeffStr + '·' + symbolLoadText;
+      }
+
+      if (powL === 1) {
+        result += '·' + symbolL;
+      } else if (powL === 2) {
+        result += '·' + symbolL + '²';
+      }
+
+      return result;
+    }
+
+    // matrice rigidezza
+    function buildStiffnessMatrix(L) {
+      const L2 = L * L;
+      const L3 = L2 * L;
+      return [
+        [ 12 / L3,  6 / L2,  -12 / L3,  6 / L2 ],
+        [  6 / L2,  4 / L,   -6 / L2,  2 / L  ],
+        [ -12 / L3, -6 / L2, 12 / L3, -6 / L2 ],
+        [  6 / L2,  2 / L,   -6 / L2,  4 / L  ]
+      ];
+    }
+
+    // carico distribuito q su tutta la trave
+    function buildUDLLoadVector(q, L) {
+      return [
+        q * L / 2,
+        q * L * L / 12,
+        q * L / 2,
+        -q * L * L / 12
+      ];
+    }
+
+    function solveLinearSystem(A, b) {
+      const n = b.length;
+      const M = A.map(r => r.slice());
+      const x = new Array(n).fill(0);
+      const bb = b.slice();
+
+      for (let k = 0; k < n; k++) {
+        let maxRow = k;
+        let maxVal = Math.abs(M[k][k]);
+        for (let i = k + 1; i < n; i++) {
+          if (Math.abs(M[i][k]) > maxVal) {
+            maxVal = Math.abs(M[i][k]);
+            maxRow = i;
+          }
+        }
+        if (maxVal < 1e-12) throw new Error('Sistema singolare.');
+        if (maxRow !== k) {
+          [M[k], M[maxRow]] = [M[maxRow], M[k]];
+          [bb[k], bb[maxRow]] = [bb[maxRow], bb[k]];
+        }
+        for (let i = k + 1; i < n; i++) {
+          const factor = M[i][k] / M[k][k];
+          for (let j = k; j < n; j++) M[i][j] -= factor * M[k][j];
+          bb[i] -= factor * bb[k];
+        }
+      }
+      for (let i = n - 1; i >= 0; i--) {
+        let sum = bb[i];
+        for (let j = i + 1; j < n; j++) sum -= M[i][j] * x[j];
+        x[i] = sum / M[i][i];
+      }
+      return x;
+    }
+
+    function multiplyMatrixVector(A, x) {
+      const n = A.length, m = x.length;
+      const y = new Array(n).fill(0);
+      for (let i = 0; i < n; i++) {
+        let s = 0;
+        for (let j = 0; j < m; j++) s += A[i][j] * x[j];
+        y[i] = s;
+      }
+      return y;
+    }
+
+    function calcolaEDisegna() {
+      const left     = leftSupportSelect.value;
+      const right    = rightSupportSelect.value;
+      const loadType = loadTypeSelect.value;
+
+      const loadParsed   = parseLoadSymbol(loadSymbolInput.value);
+      const lengthParsed = parseLengthSymbol(lengthSymbolInput.value);
+
+      const factorLoad   = loadParsed.factor;
+      const symbolLoad   = loadParsed.symbol;
+      const symbolLoadText = loadParsed.raw; // ciò che ha scritto l'utente (q, 2q, 3q...)
+      const L            = lengthParsed.Lnum;
+      const symbolL      = lengthParsed.symbol;
+
+      let a = parseFloat(aInput.value);
+      resultsDiv.innerHTML = '';
+
+      // sforzo assiale
+      let N_value = 0;
+      let N_sym   = '0';
+      if (enableAxialCheck.checked) {
+        const axialParsed = parseLoadSymbol(axialSymbolInput.value);
+        let axialFactor = axialParsed.factor;
+        const axialSymbolText = axialParsed.raw;
+        const dir = axialDirectionSel.value; // tensione/compressione
+        let signN = dir === 'tensione' ? 1 : -1;
+        N_value = signN * axialFactor;
+        const fracN = floatToFraction(N_value);
+        N_sym = formatCoeffWithSymbols(fracN, axialSymbolText, '', 0);
+      }
+
+      if (!L || L <= 0) {
+        resultsDiv.innerHTML = '<p style="color:red;">La lunghezza L deve essere positiva.</p>';
+        clearDiagrams();
+        drawFBD(left, right, L, 0, 0, 0, 0, 0, 0, N_value, symbolLoadText, symbolL, loadType, '', '', '', '', N_sym);
+        return;
+      }
+
+      const schemaDescrizione = `sinistra: ${left}, destra: ${right}`;
+      let RA_up = 0, RB_up = 0, MA = 0, MB = 0, q = 0, P = 0;
+      let RA_sym = '', RB_sym = '', MA_sym = '', MB_sym = '';
+
+      // ---- CARICO CONCENTRATO ----
+      if (loadType === 'point') {
+        const simplySupported =
+          (left === 'cerniera' || left === 'carrello') &&
+          (right === 'cerniera' || right === 'carrello');
+
+        if (!simplySupported) {
+          resultsDiv.innerHTML = `
+            <p style="color:red;">
+              Per ora il <strong>carico concentrato</strong> è implementato solo per schema
+              tipo <strong>trave semplicemente appoggiata</strong> (cerniera/carrello ai due estremi).
+            </p>
+            <p class="small">Usa il carico distribuito per qualsiasi combinazione di vincoli.</p>
+          `;
+          clearDiagrams();
+          drawFBD(left, right, L, 0, 0, 0, 0, 0, 0, N_value, symbolLoadText, symbolL, loadType, '', '', '', '', N_sym);
+          return;
+        }
+
+        if (isNaN(a) || a < 0 || a > L) {
+          resultsDiv.innerHTML = '<p style="color:red;">Per il carico concentrato: a deve essere tra 0 e L.</p>';
+          clearDiagrams();
+          drawFBD(left, right, L, 0, 0, 0, 0, 0, 0, N_value, symbolLoadText, symbolL, loadType, '', '', '', '', N_sym);
+          return;
+        }
+
+        P = factorLoad; // valore numerico adimensionale
+
+        const RA = P * (L - a) / L;
+        const RB = P * a / L;
+        RA_up = RA; RB_up = RB; MA = 0; MB = 0;
+
+        const xs = [], Vs = [], Ms = [], Ns = [];
+        const nPoints = 200;
+        for (let i = 0; i <= nPoints; i++) {
+          const x = (L * i) / nPoints;
+          xs.push(x);
+          let V, M;
+          if (x < a) { V = RA; M = RA * x; }
+          else       { V = RA - P; M = RA * x - P * (x - a); }
+          Vs.push(V); Ms.push(M);
+          Ns.push(N_value);
+        }
+
+        if (Math.abs(P) > 1e-12) {
+          const RA_c = RA_up / P;
+          const RB_c = RB_up / P;
+          RA_sym = formatCoeffWithSymbols(floatToFraction(RA_c), symbolLoadText, '', 0);
+          RB_sym = formatCoeffWithSymbols(floatToFraction(RB_c), symbolLoadText, '', 0);
+        }
+
+        let html = '<h4>Risultati adimensionali (carico concentrato)</h4>';
+        html += `<p><strong>Schema vincoli:</strong> ${schemaDescrizione}</p>`;
+        html += `<p><strong>Lunghezza:</strong> ${symbolL} (L = ${L})</p>`;
+        html += `<p><strong>Carico concentrato:</strong> ${symbolLoadText}</p>`;
+        html += `<p><strong>Posizione carico:</strong> a = ${a} (0 ≤ a ≤ L)</p>`;
+        html += `<p><strong>Reazione in A (↑):</strong> ${RA_sym || '0'}</p>`;
+        html += `<p><strong>Reazione in B (↑):</strong> ${RB_sym || '0'}</p>`;
+        html += `<p><strong>Momenti ai vincoli:</strong> MA = 0, MB = 0 (cerniere/carrelli)</p>`;
+
+        if (Math.abs(N_value) < 1e-9) {
+          html += `<p><strong>Sforzo assiale N(x):</strong> 0 (non applicato)</p>`;
+        } else {
+          html += `<p><strong>Sforzo assiale N(x):</strong> ${N_sym} (costante; N &gt; 0 = trazione)</p>`;
+        }
+
+        resultsDiv.innerHTML = html;
+
+        drawDiagram('canvasV', xs, Vs, 'T(x)', false);
+        drawDiagram('canvasM', xs, Ms, 'M(x)', true);
+        drawDiagram('canvasN', xs, Ns, 'N(x)', false);
+
+        drawFBD(left, right, L, 0, P, a, RA_up, RB_up, MA, MB, N_value,
+                symbolLoadText, symbolL, loadType, RA_sym, RB_sym, '', '', N_sym);
+        document.getElementById('diagramsCard').scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
+
+      // ---- CARICO DISTRIBUITO UDL ----
+      q = factorLoad; // valore numerico adimensionale (es. 3 se scrivi 3q)
+      const K = buildStiffnessMatrix(L);
+      const F = buildUDLLoadVector(q, L);
+
+      const constrained = [false, false, false, false];
+
+      function applySupport(side, indexBase) {
+        if (side === 'cerniera' || side === 'carrello') {
+          constrained[indexBase + 0] = true; // v
+        } else if (side === 'incastro' || side === 'doppio_pendolo') {
+          constrained[indexBase + 0] = true; // v
+          constrained[indexBase + 1] = true; // θ
+        } else if (side === 'doppio_doppio_pendolo') {
+          constrained[indexBase + 1] = true; // θ
+        }
+      }
+      applySupport(left, 0);
+      applySupport(right, 2);
+
+      const freeIndices = [];
+      for (let i = 0; i < 4; i++) if (!constrained[i]) freeIndices.push(i);
+
+      const d = [0, 0, 0, 0];
+      if (freeIndices.length > 0) {
+        const m = freeIndices.length;
+        const Kff = Array.from({ length: m }, () => Array(m).fill(0));
+        const Ff = new Array(m).fill(0);
+        for (let i = 0; i < m; i++) {
+          const gi = freeIndices[i];
+          Ff[i] = F[gi];
+          for (let j = 0; j < m; j++) {
+            const gj = freeIndices[j];
+            Kff[i][j] = K[gi][gj];
+          }
+        }
+        let df;
+        try {
+          df = solveLinearSystem(Kff, Ff);
+        } catch (e) {
+          resultsDiv.innerHTML = `<p style="color:red;">Errore nel calcolo degli spostamenti: ${e.message}</p>`;
+          clearDiagrams();
+          drawFBD(left, right, L, q, 0, 0, 0, 0, 0, N_value, symbolLoadText, symbolL, loadType, '', '', '', '', N_sym);
+          return;
+        }
+        for (let i = 0; i < m; i++) {
+          const gi = freeIndices[i];
+          d[gi] = df[i];
+        }
+      }
+      // se freeIndices.length==0 (doppio incastro): d = [0,0,0,0]
+
+      const Kd = multiplyMatrixVector(K, d);
+      const R  = Kd.map((v, i) => v - F[i]);
+
+      RA_up = -R[0];
+      RB_up = -R[2];
+      MA    = -R[1];
+      MB    = -R[3];
+
+      const xs = [], Vs = [], Ms = [], Ns = [];
+      const nPoints = 200;
+      for (let i = 0; i <= nPoints; i++) {
+        const x = (L * i) / nPoints;
+        xs.push(x);
+        const Vx = RA_up - q * x;
+        const Mx = MA + RA_up * x - (q * x * x) / 2;
+        Vs.push(Vx); Ms.push(Mx);
+        Ns.push(N_value);
+      }
+
+      // forma simbolica CORRETTA:
+      // RA = coeff · (symbolLoadText) · (symbolL)
+      // con coeff = RA_up / (factorLoad * L)
+      if (Math.abs(factorLoad) > 1e-12 && Math.abs(L) > 1e-12) {
+        const RA_c = RA_up / (factorLoad * L);
+        const RB_c = RB_up / (factorLoad * L);
+        const MA_c = MA    / (factorLoad * L * L);
+        const MB_c = MB    / (factorLoad * L * L);
+
+        RA_sym = formatCoeffWithSymbols(floatToFraction(RA_c), symbolLoadText, symbolL, 1);
+        RB_sym = formatCoeffWithSymbols(floatToFraction(RB_c), symbolLoadText, symbolL, 1);
+        MA_sym = formatCoeffWithSymbols(floatToFraction(MA_c), symbolLoadText, symbolL, 2);
+        MB_sym = formatCoeffWithSymbols(floatToFraction(MB_c), symbolLoadText, symbolL, 2);
+      }
+
+      let html = '<h4>Risultati adimensionali (carico distribuito uniforme)</h4>';
+      html += `<p><strong>Schema vincoli:</strong> ${schemaDescrizione}</p>`;
+      html += `<p><strong>Lunghezza:</strong> ${symbolL} (L = ${L})</p>`;
+      html += `<p><strong>Carico distribuito:</strong> ${symbolLoadText} su tutta la trave</p>`;
+      html += `<p><strong>Reazione verticale sinistra (↑):</strong> ${RA_sym || '0'}</p>`;
+      html += `<p><strong>Reazione verticale destra (↑):</strong> ${RB_sym || '0'}</p>`;
+      html += `<p><strong>Momento al nodo sinistro (MA):</strong> ${MA_sym || '0'}</p>`;
+      html += `<p><strong>Momento al nodo destro (MB):</strong> ${MB_sym || '0'}</p>`;
+
+      if (Math.abs(N_value) < 1e-9) {
+        html += `<p><strong>Sforzo assiale N(x):</strong> 0 (non applicato)</p>`;
+      } else {
+        html += `<p><strong>Sforzo assiale N(x):</strong> ${N_sym} (costante; N &gt; 0 = trazione)</p>`;
+      }
+
+      resultsDiv.innerHTML = html;
+
+      drawDiagram('canvasV', xs, Vs, 'T(x)', false);
+      drawDiagram('canvasM', xs, Ms, 'M(x)', true);
+      drawDiagram('canvasN', xs, Ns, 'N(x)', false);
+
+      drawFBD(left, right, L, q, 0, 0, RA_up, RB_up, MA, MB, N_value,
+              symbolLoadText, symbolL, loadType, RA_sym, RB_sym, MA_sym, MB_sym, N_sym);
+      document.getElementById('diagramsCard').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // --- diagrammi ---
+    function clearDiagrams() {
+      ['canvasV', 'canvasM', 'canvasN'].forEach(id => {
+        const c = document.getElementById(id);
+        if (!c) return;
+        const ctx = c.getContext('2d');
+        const w = c.clientWidth || 400, h = c.clientHeight || 200;
+        c.width = w; c.height = h;
+        ctx.clearRect(0, 0, w, h);
+      });
+    }
+
+    // invert = true per momento (positivo sotto)
+    function drawDiagram(canvasId, xs, ys, label, invert) {
+      const c = document.getElementById(canvasId);
+      const ctx = c.getContext('2d');
+      const w = c.clientWidth || 400, h = c.clientHeight || 200;
+      c.width = w; c.height = h;
+      ctx.clearRect(0, 0, w, h);
+
+      const maxAbs = Math.max(...ys.map(v => Math.abs(v))) || 1;
+      const padL = 30, padR = 10, padT = 10, padB = 25;
+      const uw = w - padL - padR, uh = h - padT - padB;
+
+      ctx.beginPath();
+      ctx.moveTo(padL, h - padB);
+      ctx.lineTo(w - padR, h - padB);
+      ctx.stroke();
+
+      const zeroY = padT + uh / 2;
+      ctx.beginPath();
+      ctx.moveTo(padL, zeroY);
+      ctx.lineTo(w - padR, zeroY);
+      ctx.setLineDash([4, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.beginPath();
+      for (let i = 0; i < xs.length; i++) {
+        const xNorm = i / (xs.length - 1);
+        const xC = padL + xNorm * uw;
+        const yVal = ys[i];
+        let yNorm = yVal / maxAbs;
+        if (invert) yNorm = -yNorm; // momento positivo sotto
+        const yC = zeroY - yNorm * (uh / 2);
+        if (i === 0) ctx.moveTo(xC, yC);
+        else ctx.lineTo(xC, yC);
+      }
+      ctx.stroke();
+
+      ctx.font = '12px Arial';
+      ctx.fillText(label, padL + 5, padT + 12);
+    }
+
+    // --- supporti & FBD ---
+    function drawSupport(ctx, x, y, type, scale) {
+      const h = 20 * scale, w = 18 * scale;
+      ctx.save();
+      ctx.lineWidth = 1;
+      if (type === 'cerniera' || type === 'carrello') {
+        // y è la coordinata del vertice superiore del triangolo
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - w / 2, y + h);
+        ctx.lineTo(x + w / 2, y + h);
+        ctx.closePath(); ctx.stroke();
+        if (type === 'carrello') {
+          const r = 3 * scale;
+          ctx.beginPath();
+          ctx.arc(x - w / 4, y + h + r + 1, r, 0, 2 * Math.PI);
+          ctx.arc(x + w / 4, y + h + r + 1, r, 0, 2 * Math.PI);
+          ctx.stroke();
+        }
+      } else if (type === 'incastro' || type === 'doppio_pendolo' || type === 'doppio_doppio_pendolo') {
+        const bw = 8 * scale;
+        ctx.beginPath();
+        ctx.rect(x - bw / 2, y, bw, h);
+        ctx.stroke();
+        ctx.font = `${10 * scale}px Arial`;
+        ctx.textAlign = 'left';
+        ctx.fillText(
+          type === 'incastro' ? 'I' : (type === 'doppio_pendolo' ? 'DP' : 'DDP'),
+          x + bw, y + h / 2
+        );
+      }
+      ctx.restore();
+    }
+
+    function drawArrow(ctx, x1, y1, x2, y2) {
+      ctx.beginPath();
+      ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      const headLen = 8;
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - headLen * Math.cos(angle - Math.PI / 6),
+                 y2 - headLen * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(x2 - headLen * Math.cos(angle + Math.PI / 6),
+                 y2 - headLen * Math.sin(angle + Math.PI / 6));
+      ctx.lineTo(x2, y2);
+      ctx.fill();
+    }
+
+    function drawMomentArrow(ctx, x, y) {
+      const r = 12;
+      ctx.beginPath();
+      // momento positivo: antiorario
+      ctx.arc(x, y, r, -0.2 * Math.PI, 1.4 * Math.PI, false);
+      ctx.stroke();
+      const angle = 1.4 * Math.PI;
+      const x2 = x + r * Math.cos(angle), y2 = y + r * Math.sin(angle);
+      const headLen = 5;
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - headLen * Math.cos(angle - Math.PI / 6),
+                 y2 - headLen * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(x2 - headLen * Math.cos(angle + Math.PI / 6),
+                 y2 - headLen * Math.sin(angle + Math.PI / 6));
+      ctx.lineTo(x2, y2);
+      ctx.fill();
+    }
+
+    function drawFBD(left, right, L, q, P, a,
+                     RA, RB, MA, MB, N_value,
+                     symbolLoadText, symbolL, loadType,
+                     RA_text, RB_text, MA_text, MB_text, N_text) {
+
+      const canvas = document.getElementById('canvasFBD');
+      const ctx = canvas.getContext('2d');
+      const w = canvas.clientWidth || 400, h = canvas.clientHeight || 200;
+      canvas.width = w; canvas.height = h;
+      ctx.clearRect(0, 0, w, h);
+
+      // Trave spostata più in basso
+      const marginX = 70;
+      const beamY = h * 0.78;
+      const xLeft = marginX;
+      const xRight = w - marginX;
+      const beamLenPx = xRight - xLeft;
+
+      ctx.lineWidth = 1.5;
+      // trave
+      ctx.beginPath();
+      ctx.moveTo(xLeft, beamY);
+      ctx.lineTo(xRight, beamY);
+      ctx.stroke();
+
+      // supporti un po' sotto la trave (piccolo gap)
+      drawSupport(ctx, xLeft, beamY + 6, left, 1);
+      drawSupport(ctx, xRight, beamY + 6, right, 1);
+
+      // carico distribuito: più in alto
+      if (loadType === 'udl' && Math.abs(q) > 1e-6) {
+        const nArr = 8;
+        for (let i = 0; i <= nArr; i++) {
+          const x = xLeft + beamLenPx * i / nArr;
+          drawArrow(ctx, x, beamY - 55, x, beamY - 25);
+        }
+        ctx.font = '11px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(symbolLoadText, (xLeft + xRight) / 2, beamY - 60);
+      }
+
+      // carico concentrato: più in alto
+      if (loadType === 'point' && Math.abs(P) > 1e-6) {
+        const pos = (a / L) || 0;
+        const x = xLeft + beamLenPx * pos;
+        drawArrow(ctx, x, beamY - 60, x, beamY - 25);
+        ctx.font = '11px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(symbolLoadText, x, beamY - 65);
+      }
+
+      // reazioni verticali (ben staccate dai vincoli)
+      ctx.font = '11px Arial';
+      ctx.textAlign = 'center';
+
+      // A sinistra
+      if (Math.abs(RA) > 1e-4) {
+        const xRA = xLeft - 30;
+        const yBase = beamY - 10;
+        const yHeadUp = yBase - 35;
+        const yHeadDown = yBase + 35;
+
+        if (RA > 0) {
+          drawArrow(ctx, xRA, yBase, xRA, yHeadUp);
+          ctx.fillText(RA_text || '', xRA, yHeadUp - 8);
+        } else {
+          drawArrow(ctx, xRA, yBase, xRA, yHeadDown);
+          ctx.fillText(RA_text || '', xRA, yHeadDown + 14);
+        }
+      }
+
+      // B destra
+      if (Math.abs(RB) > 1e-4) {
+        const xRB = xRight + 30;
+        const yBase = beamY - 10;
+        const yHeadUp = yBase - 35;
+        const yHeadDown = yBase + 35;
+
+        if (RB > 0) {
+          drawArrow(ctx, xRB, yBase, xRB, yHeadUp);
+          ctx.fillText(RB_text || '', xRB, yHeadUp - 8);
+        } else {
+          drawArrow(ctx, xRB, yBase, xRB, yHeadDown);
+          ctx.fillText(RB_text || '', xRB, yHeadDown + 14);
+        }
+      }
+
+      // momenti (ancora più esterni)
+      if (Math.abs(MA) > 1e-3) {
+        const xM = xLeft - 55;
+        const yM = beamY - 15;
+        drawMomentArrow(ctx, xM, yM);
+        ctx.font = '11px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(MA_text || '', xM, yM - 24);
+      }
+      if (Math.abs(MB) > 1e-3) {
+        const xM = xRight + 55;
+        const yM = beamY - 15;
+        drawMomentArrow(ctx, xM, yM);
+        ctx.font = '11px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(MB_text || '', xM, yM - 24);
+      }
+
+      // sforzo assiale: freccia orizzontale a metà trave
+      if (Math.abs(N_value) > 1e-4) {
+        const xMidL = xLeft + beamLenPx * 0.3;
+        const xMidR = xLeft + beamLenPx * 0.7;
+        const yN = beamY - 5;
+        ctx.font = '11px Arial';
+        ctx.textAlign = 'center';
+        if (N_value > 0) {
+          // trazione: verso destra
+          drawArrow(ctx, xMidL, yN, xMidR, yN);
+        } else {
+          // compressione: verso sinistra
+          drawArrow(ctx, xMidR, yN, xMidL, yN);
+        }
+        ctx.fillText(N_text || '', (xMidL + xMidR) / 2, yN - 8);
+      }
+
+      // lunghezza
+      ctx.font = '11px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(symbolL, (xLeft + xRight) / 2, beamY + 25);
+      ctx.beginPath();
+      ctx.moveTo(xLeft, beamY + 18);
+      ctx.lineTo(xRight, beamY + 18);
+      ctx.moveTo(xLeft, beamY + 14);
+      ctx.lineTo(xLeft, beamY + 22);
+      ctx.moveTo(xRight, beamY + 14);
+      ctx.lineTo(xRight, beamY + 22);
+      ctx.stroke();
+
+      // --- leggenda convenzione momento (in alto a destra) ---
+      const legendX = w - 90;
+      const legendY = 22;
+
+      ctx.font = '10px Arial';
+      ctx.textAlign = 'left';
+      ctx.fillText('M+ antiorario', legendX, legendY);
+
+      const cx = legendX + 35;
+      const cy = legendY + 15;
+      const r  = 10;
+
+      // arco antiorario
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, 1.5 * Math.PI, false);
+      ctx.stroke();
+
+      const angle = 1.5 * Math.PI;
+      const x2 = cx + r * Math.cos(angle);
+      const y2 = cy + r * Math.sin(angle);
+      const headLen = 4;
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - headLen * Math.cos(angle - Math.PI / 6),
+                 y2 - headLen * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(x2 - headLen * Math.cos(angle + Math.PI / 6),
+                 y2 - headLen * Math.sin(angle + Math.PI / 6));
+      ctx.lineTo(x2, y2);
+      ctx.fill();
+    }
+
+    // avvio
+    calcolaEDisegna();
+  </script>
+</body>
+</html>
