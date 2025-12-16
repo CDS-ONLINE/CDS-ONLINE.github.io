@@ -5,6 +5,20 @@
   <title>Caratteristiche delle sollecitazioni online - CDS ONLINE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
+    .top-logout{
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 9999;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #d8d8d8;
+  background: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.08);
+}
+.top-logout:active{ transform: translateY(1px); }
     body {
       font-family: Arial, sans-serif;
       max-width: 1100px;
@@ -212,6 +226,10 @@
 <body>
   <h1>Caratteristiche delle sollecitazioni online - CDS ONLINE</h1>
   <h2>CDS ONLINE: vincoli, carichi, reazioni e diagrammi delle sollecitazioni</h2>
+  <button id="topLogoutBtn" class="top-logout" style="display:none;">
+  Logout
+</button>
+
   
 
   <!-- INIZIO LOGIN / REGISTRAZIONE -->
@@ -1091,6 +1109,7 @@
   // Riferimenti DOM (già presenti nel tuo HTML)
   const authBox     = document.getElementById("authBox");
   const emailInput  = document.getElementById("authEmail");
+  const topLogoutBtn = document.getElementById("topLogoutBtn");
   const passInput   = document.getElementById("authPass");
   const msg         = document.getElementById("authMsg");
   const btnLogin    = document.getElementById("btnLogin");
@@ -1103,15 +1122,14 @@
 
   // 🔑 Stato autenticazione
   onAuthStateChanged(auth, (user) => {
-    if (user) {
-      // utente loggato → nascondi box login
-      if (authBox) authBox.style.display = "none";
-    } else {
-      // utente NON loggato → mostra box
-      if (authBox) authBox.style.display = "block";
-    }
-  });
-
+  if (user) {
+    if (authBox) authBox.style.display = "none";
+    if (topLogoutBtn) topLogoutBtn.style.display = "inline-block";
+  } else {
+    if (authBox) authBox.style.display = "block";
+    if (topLogoutBtn) topLogoutBtn.style.display = "none";
+  }
+});
   // Login
   btnLogin.addEventListener("click", async () => {
     setMsg("");
@@ -1144,6 +1162,10 @@
   btnLogout.addEventListener("click", async () => {
     await signOut(auth);
   });
+  topLogoutBtn.addEventListener("click", async () => {
+  await signOut(auth);
+});
+
 </script>
 
 </body>
