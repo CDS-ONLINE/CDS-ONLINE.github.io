@@ -5,6 +5,22 @@
   <title>Caratteristiche delle sollecitazioni online - CDS ONLINE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
+    html { scroll-behavior: smooth; }
+
+    .content-section{
+  max-width:900px;
+  margin:40px auto;
+  padding:0 20px;
+}
+.content-section h2{
+  margin-bottom:14px;
+}
+.content-section p,
+.content-section li{
+  line-height:1.6;
+  font-size:15px;
+}
+
     .top-logout{
   position: fixed;
   top: 14px;
@@ -220,12 +236,35 @@
   @media (max-width: 720px){
     .auth-grid{ grid-template-columns: 1fr; }
   }
+  .top-menu{
+  width:100%;
+  background:#111;
+  padding:12px 20px;
+  display:flex;
+  gap:20px;
+  box-sizing:border-box;
+}
+.top-menu a{
+  color:#fff;
+  text-decoration:none;
+  font-weight:700;
+  font-size:14px;
+}
+.top-menu a:hover{
+  text-decoration:underline;
+}
+
 </style>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9758548272257438"
      crossorigin="anonymous"></script>
 </head>
 <body>
   <h1>Caratteristiche delle sollecitazioni online - CDS ONLINE</h1>
+  <nav class="top-menu">
+  <a href="#vincoli">Vincoli</a>
+  <a href="#scienza">Scienza delle costruzioni</a>
+</nav>
+
   <h2>CDS ONLINE: vincoli, carichi, reazioni e diagrammi delle sollecitazioni</h2>
   <button id="topLogoutBtn" class="top-logout" style="display:none;">
   Logout
@@ -264,6 +303,77 @@
   <p id="authMsg" class="auth-msg"></p>
 </section>
   <!-- FINE LOGIN / REGISTRAZIONE -->
+ <section id="vincoli" class="content-section">
+
+  <h2>I vincoli strutturali</h2>
+
+  <p>
+  Nella scienza delle costruzioni, i vincoli rappresentano le condizioni
+  che limitano il movimento di una struttura o di una sua parte.
+  Essi sono fondamentali per determinare le reazioni vincolari e il
+  comportamento globale dell’opera strutturale.
+  </p>
+
+  <p>
+  I principali tipi di vincolo utilizzati nei modelli strutturali sono:
+  </p>
+
+  <ul>
+    <li>
+      <strong>Incastro:</strong> impedisce sia le traslazioni che le rotazioni.
+      Genera reazioni orizzontali, verticali e un momento vincolare.
+    </li>
+    <li>
+      <strong>Cerniera:</strong> impedisce le traslazioni ma consente la rotazione.
+      Le reazioni sono di tipo orizzontale e verticale, senza momento.
+    </li>
+    <li>
+      <strong>Carrello:</strong> impedisce una sola traslazione.
+      Genera una sola reazione vincolare, generalmente verticale.
+    </li>
+  </ul>
+
+  <p>
+  La corretta individuazione dei vincoli è essenziale per impostare
+  correttamente l’analisi strutturale e per ottenere diagrammi delle
+  sollecitazioni coerenti con il comportamento reale della struttura.
+  </p>
+</section>
+<section id="scienza" class="content-section">
+  <h2>Scienza delle costruzioni</h2>
+
+  <p>
+  La scienza delle costruzioni è la disciplina che studia il comportamento
+  meccanico delle strutture soggette a carichi, analizzando le relazioni
+  tra forze, spostamenti e deformazioni.
+  </p>
+
+  <p>
+  Essa fornisce gli strumenti teorici per comprendere come le strutture
+  reagiscono alle azioni esterne e per garantire sicurezza, stabilità
+  ed efficienza nella progettazione.
+  </p>
+
+  <p>
+  Tra i principali argomenti trattati rientrano:
+  </p>
+
+  <ul>
+    <li>equilibrio dei sistemi di forze</li>
+    <li>reazioni vincolari</li>
+    <li>diagrammi di sforzo normale, taglio e momento flettente</li>
+    <li>deformazioni e spostamenti</li>
+    <li>modelli strutturali semplificati</li>
+  </ul>
+
+  <p>
+  CDS ONLINE nasce con l’obiettivo di supportare studenti e tecnici
+  nell’apprendimento di questi concetti, offrendo uno strumento
+  interattivo per la visualizzazione delle sollecitazioni strutturali.
+  </p>
+</section>
+
+
 
 
   <!-- CONTENUTO TESTUALE (per qualità sito / revisione AdSense) -->
